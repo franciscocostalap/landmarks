@@ -17,12 +17,7 @@ service LandmarkDetectionService {
   rpc GetPhotosByConfidence(GetPhotosByConfidenceRequest) returns (GetPhotosByConfidenceResponse);
 }
 
-message ImageName {
-  string name = 1;
-}
-
 message ImageSubmissionChunk {
-  ImageName image_name = 1;
   // Content of a part of the image file
   bytes chunk_data = 2;
 }
