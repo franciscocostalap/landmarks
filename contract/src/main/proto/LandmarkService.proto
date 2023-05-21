@@ -9,6 +9,7 @@ package landmark_service;
 service LandmarkDetectionService {
   // Submits an image for monument detection
   rpc SubmitImage(stream ImageSubmissionChunk) returns (ImageSubmissionResponse);
+
 }
 
 message ImageSubmissionChunk {
