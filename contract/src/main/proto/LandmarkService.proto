@@ -7,6 +7,8 @@ option java_package = "landmark_service";
 package landmark_service;
 
 service LandmarkDetectionService {
+  // Checks if the service is alive
+  rpc isAlive(Void) returns (Text);
   // Submits an image for monument detection
   rpc SubmitImage(stream ImageSubmissionChunk) returns (ImageSubmissionResponse);
 
@@ -17,9 +19,17 @@ service LandmarkDetectionService {
   rpc GetPhotosByConfidence(GetPhotosByConfidenceRequest) returns (GetPhotosByConfidenceResponse);
 }
 
+message Void {
+
+}
+
+message Text {
+  string msg=1;
+}
+
 message ImageSubmissionChunk {
   // Content of a part of the image file
-  bytes chunk_data = 2;
+  bytes chunk_data = 1;
 }
 
 message ImageSubmissionResponse {
