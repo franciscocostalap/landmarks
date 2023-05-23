@@ -1,11 +1,13 @@
 import io.grpc.stub.StreamObserver;
 import landmark_service.ImageSubmissionResponse;
 
+import java.util.concurrent.CountDownLatch;
+
 public class ImageSubmitResponseStreamObserver implements StreamObserver<ImageSubmissionResponse> {
 
-    private Boolean isCompleted = false;
     private Boolean hasErrorOccurred = false;
     private String requestId;
+    private final CountDownLatch latch = new CountDownLatch(1);
 
     @Override
     public void onNext(ImageSubmissionResponse imageSubmissionResponse) {
@@ -19,11 +21,11 @@ public class ImageSubmitResponseStreamObserver implements StreamObserver<ImageSu
 
     @Override
     public void onCompleted() {
-        isCompleted = true;
+        latch.countDown();
     }
 
-    public Boolean isCompleted(){
-        return isCompleted;
+    public void waitForCompletion() throws InterruptedException {
+        latch.await();
     }
 
     public String getRequestId(){

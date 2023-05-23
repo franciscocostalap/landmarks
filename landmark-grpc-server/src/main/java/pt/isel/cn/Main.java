@@ -11,11 +11,20 @@ import java.util.Scanner;
 import java.util.logging.Logger;
 
 public class Main {
+
+    private static final int svcPort = 8080;
+
     public static void main(String[] args) {
         Logger logger = Logger.getLogger(Main.class.getName());
         Storage storage = StorageOptions.getDefaultInstance().getService();
+        String projectId = storage.getOptions().getProjectId();
+        if (projectId == null)
+            throw new RuntimeException("Please set the environment variable " +
+                    "GOOGLE_APPLICATION_CREDENTIALS to the path of your service account key file.");
+        logger.info("Project ID: " + projectId);
+
         // por porto na env
-        Server server = ServerBuilder.forPort(8080)
+        Server server = ServerBuilder.forPort(15004)
                 .addService(new LandmarkDetectionServiceImpl(
                         storage,
                         new  pt.isel.cn.utils.UUIDRandomNameGenerator(),
@@ -28,9 +37,12 @@ public class Main {
             logger.info("Server started!");
             Scanner scanner = new Scanner(System.in);
             scanner.nextLine();
+
             logger.info("Server terminated!");
         } catch (IOException e) {
             e.printStackTrace();
+        }finally {
+            server.shutdown();
         }
     }
 }
