@@ -1,12 +1,11 @@
 package pt.isel.cn;
 
+import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
+import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
-import landmark_service.ImageSubmissionChunk;
-import landmark_service.ImageSubmissionResponse;
-import landmark_service.LandmarkDetectionServiceGrpc;
-import landmark_service.Text;
+import landmark_service.*;
 import landmark_service.Void;
 import pt.isel.cn.utils.RandomNameGenerator;
 
@@ -33,6 +32,18 @@ public class LandmarkDetectionServiceImpl extends LandmarkDetectionServiceGrpc.L
         logger.info( "Generated random name for blob: " + blobName);
         BlobInfo.Builder blobInfoBuilder = BlobInfo.newBuilder(landmarkBucket, blobName);
         return new CloudStorageStreamObserver(this.cloudStorage, blobInfoBuilder, responseObserver);
+    }
+
+    @Override
+    public void getSubmissionResult(GetSubmissionResultRequest request, StreamObserver<GetSubmissionResultResponse> responseObserver) {
+        logger.info( "Received submission result request with id " + request.getRequestId());
+        //send id to pubsub
+        GetSubmissionResultResponse submissionResultResponse = GetSubmissionResultResponse.newBuilder()
+                //... build result
+                .build();
+        responseObserver.onNext(submissionResultResponse);
+        responseObserver.onCompleted();
+
     }
 
     @Override
