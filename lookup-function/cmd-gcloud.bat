@@ -1,0 +1,1 @@
+gcloud functions deploy cn-landkmarks-http-lookup --project=cn2223-t1-g06 --region=europe-west1 --allow-unauthenticated --entry-point=functionlookup.Entrypoint --runtime=java11 --trigger-http --source=target/deployment --service-account=compute-engine-cloud-functions@cn2223-t1-g06.iam.gserviceaccount.com
