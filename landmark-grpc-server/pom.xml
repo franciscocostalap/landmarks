@@ -16,7 +16,7 @@
     </properties>
 
     <!--necessary because: https://cloud.google.com/java/docs/bom -->
-    <dependencyManagement>
+            <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>com.google.guava</groupId>
