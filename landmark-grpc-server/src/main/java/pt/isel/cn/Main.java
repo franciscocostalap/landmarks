@@ -4,17 +4,35 @@ import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import pt.isel.cn.utils.UUIDRandomNameGenerator;
 
 
 import java.io.IOException;
 import java.util.Scanner;
 import java.util.logging.Logger;
 
+import static pt.isel.cn.Constants.LANDMARK_BUCKET;
+
 public class Main {
 
-    private static final int svcPort = 8080;
+    private static int svcPort = 7500;
 
     public static void main(String[] args) {
+        if (args.length > 0) {
+            try {
+                int port = Integer.parseInt(args[0]);
+                if (port > 0 && port < 65535) {
+                    System.out.println("Port set to " + port);
+                    svcPort = port;
+                } else {
+                    System.out.println("Port must be between 0 and 65535");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Port must be a number");
+            }
+        }
+        System.out.println("Starting server on port " + svcPort);
+
         Logger logger = Logger.getLogger(Main.class.getName());
         Storage storage = StorageOptions.getDefaultInstance().getService();
         String projectId = storage.getOptions().getProjectId();
@@ -24,13 +42,14 @@ public class Main {
         logger.info("Project ID: " + projectId);
 
         // por porto na env
-        Server server = ServerBuilder.forPort(15004)
-                .addService(new LandmarkDetectionServiceImpl(
-                        storage,
-                        new  pt.isel.cn.utils.UUIDRandomNameGenerator(),
-                        "landmark-bucket-tf")
-                )
-                .build();
+        Server server = ServerBuilder.forPort(svcPort)
+                .addService(
+                    new LandmarkDetectionServiceImpl(
+                    storage,
+                    new  UUIDRandomNameGenerator(),
+                    LANDMARK_BUCKET,
+                    new CloudPubSubPublisher()
+                )).build();
         try {
             logger.info("Starting server...");
             server.start();

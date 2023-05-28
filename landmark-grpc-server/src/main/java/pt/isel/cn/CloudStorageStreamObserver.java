@@ -17,14 +17,17 @@ public class CloudStorageStreamObserver implements StreamObserver<ImageSubmissio
     private final StreamObserver<ImageSubmissionResponse> responseObserver;
     private BlobId blobId;
     private final StreamObjectUpload streamObjectUpload;
+    private final CloudPubSubPublisher cloudPubSubPublisher;
 
     public CloudStorageStreamObserver(
             Storage storage,
             BlobInfo.Builder blobInfoBuilder,
-            StreamObserver<ImageSubmissionResponse> responseObserver
+            StreamObserver<ImageSubmissionResponse> responseObserver,
+            CloudPubSubPublisher cloudPubSubPublisher
     ){
         this.responseObserver = responseObserver;
         this.streamObjectUpload = new StreamObjectUpload(storage, blobInfoBuilder);
+        this.cloudPubSubPublisher = cloudPubSubPublisher;
     }
 
     @Override
@@ -57,14 +60,14 @@ public class CloudStorageStreamObserver implements StreamObserver<ImageSubmissio
     @Override
     public void onCompleted() {
         try {
-            logger.info("Completed upload of blob: " + blobId.getName());
-
             String blobName = blobId.getName();
             String blobBucket = blobId.getBucket();
             ImageSubmissionResponse imageSubmissionResponse =
-                    ImageSubmissionResponse.newBuilder().setRequestId(blobName + "-" + blobBucket).build();
+                    ImageSubmissionResponse.newBuilder().setRequestId(blobBucket + ";" + blobName).build();
             responseObserver.onNext(imageSubmissionResponse);
             responseObserver.onCompleted();
+            logger.info("Completed upload of blob: " + blobId.getName());
+            cloudPubSubPublisher.publish(blobId.getName());
             streamObjectUpload.closeWriteChannel();
         }catch (IOException e){
             e.printStackTrace();

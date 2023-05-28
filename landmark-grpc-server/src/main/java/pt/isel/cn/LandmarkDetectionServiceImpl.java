@@ -1,9 +1,8 @@
 package pt.isel.cn;
 
-import com.google.cloud.storage.BlobId;
+
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
-import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
 import landmark_service.*;
 import landmark_service.Void;
@@ -18,11 +17,17 @@ public class LandmarkDetectionServiceImpl extends LandmarkDetectionServiceGrpc.L
     private final Storage cloudStorage;
     private final String landmarkBucket;
     private final RandomNameGenerator randomNameGenerator;
+    private final CloudPubSubPublisher cloudPubSubPublisher;
 
-    public LandmarkDetectionServiceImpl(Storage storage, RandomNameGenerator randomNameGenerator, String landmarkBucket){
+    public LandmarkDetectionServiceImpl(
+            Storage storage,
+            RandomNameGenerator randomNameGenerator,
+            String landmarkBucket,
+            CloudPubSubPublisher cloudPubSubPublisher){
         this.cloudStorage = storage;
         this.randomNameGenerator = randomNameGenerator;
         this.landmarkBucket = landmarkBucket;
+        this.cloudPubSubPublisher = cloudPubSubPublisher;
     }
 
     @Override
@@ -31,13 +36,17 @@ public class LandmarkDetectionServiceImpl extends LandmarkDetectionServiceGrpc.L
         String blobName = randomNameGenerator.generateName();
         logger.info( "Generated random name for blob: " + blobName);
         BlobInfo.Builder blobInfoBuilder = BlobInfo.newBuilder(landmarkBucket, blobName);
-        return new CloudStorageStreamObserver(this.cloudStorage, blobInfoBuilder, responseObserver);
+        return new CloudStorageStreamObserver(
+                this.cloudStorage,
+                blobInfoBuilder,
+                responseObserver,
+                cloudPubSubPublisher
+        );
     }
 
     @Override
     public void getSubmissionResult(GetSubmissionResultRequest request, StreamObserver<GetSubmissionResultResponse> responseObserver) {
         logger.info( "Received submission result request with id " + request.getRequestId());
-        //send id to pubsub
         GetSubmissionResultResponse submissionResultResponse = GetSubmissionResultResponse.newBuilder()
                 //... build result
                 .build();
