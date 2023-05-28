@@ -2,22 +2,17 @@ package pt.isel.cn;
 
 import com.google.api.gax.core.ExecutorProvider;
 import com.google.api.gax.core.InstantiatingExecutorProvider;
-import com.google.cloud.firestore.Firestore;
 import com.google.cloud.pubsub.v1.Subscriber;
 import com.google.pubsub.v1.ProjectSubscriptionName;
-import pt.isel.cn.vision.VisionAPIClient;
+import pt.isel.cn.message.MessageReceiveHandler;
 
 import static pt.isel.cn.Constants.PROJECT_ID;
 
 public class PubSubClient {
-    private final VisionAPIClient visionAPIClient;
-    private final MapsAPIClient mapsAPIClient;
-    private final Firestore db;
+    private final MessageReceiveHandler msgHandler;
 
-    PubSubClient(VisionAPIClient visionAPIClient, MapsAPIClient mapsAPIClient, Firestore db) {
-        this.visionAPIClient = visionAPIClient;
-        this.mapsAPIClient = mapsAPIClient;
-        this.db = db;
+    PubSubClient(MessageReceiveHandler msgHandler) {
+        this.msgHandler = msgHandler;
     }
 
     public void startConsumer() {
@@ -29,10 +24,10 @@ public class PubSubClient {
 
 
         ProjectSubscriptionName subscriptionName =
-                ProjectSubscriptionName.of(PROJECT_ID, Constants.subscriptionName);
+                ProjectSubscriptionName.of(PROJECT_ID, Constants.SUBSCRIPTION_NAME);
 
         Subscriber subscriber =
-                Subscriber.newBuilder(subscriptionName, new MessageReceiveHandler(visionAPIClient, mapsAPIClient, db))
+                Subscriber.newBuilder(subscriptionName, msgHandler)
                         .setExecutorProvider(executorProvider)
                         .build();
 
