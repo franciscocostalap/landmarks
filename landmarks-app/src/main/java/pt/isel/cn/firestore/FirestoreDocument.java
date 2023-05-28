@@ -5,9 +5,11 @@ import pt.isel.cn.vision.LandmarkPrediction;
 import java.util.ArrayList;
 
 public class FirestoreDocument {
-    private ArrayList<LandmarkPrediction> landmarkPredictions;
+    private final ArrayList<LandmarkPrediction> landmarkPredictions;
 
-    public FirestoreDocument() {}
+    public FirestoreDocument() {
+        this.landmarkPredictions = new ArrayList<>();
+    }
 
     public FirestoreDocument(ArrayList<LandmarkPrediction> landmarkPredictions) {
         this.landmarkPredictions = landmarkPredictions;

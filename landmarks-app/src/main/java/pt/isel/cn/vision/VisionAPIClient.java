@@ -10,6 +10,13 @@ import java.util.List;
 
 public class VisionAPIClient {
 
+    /**
+     * Detects landmarks in the specified remote image on Google Cloud Storage.
+     *
+     * @param blobGsPath The path to the image in the Google Cloud Storage
+     * @return A list of landmarks detected in the image by the Google Vision API
+     * @throws IOException
+     */
     public ArrayList<LandmarkPrediction> detectLandmarksGcs(String blobGsPath) throws IOException {
         System.out.println("Detecting landmarks for: " + blobGsPath);
         List<AnnotateImageRequest> requests = new ArrayList<>();
@@ -37,20 +44,32 @@ public class VisionAPIClient {
                 System.out.println("Landmarks list size: " + res.getLandmarkAnnotationsList().size());
 
                 for (EntityAnnotation annotation : res.getLandmarkAnnotationsList()) {
-                    LocationInfo info = annotation.getLocationsList().listIterator().next();
-                    LatLng coordinates = info.getLatLng();
-                    LandmarkPrediction landmarkPrediction = new LandmarkPrediction(
-                            annotation.getDescription(),
-                            annotation.getScore(),
-                            String.valueOf(coordinates.getLatitude()),
-                            String.valueOf(coordinates.getLongitude())
-                    );
-                    landmarkPredictions.add(landmarkPrediction);
+                    addLandmarkPredictionTo(landmarkPredictions, annotation);
                 }
 
             }
             return landmarkPredictions;
         }
+    }
+
+    /**
+     * Builds a LandmarkPrediction from an EntityAnnotation and adds it to the landmarkPredictions list
+     * @param landmarkPredictions The list of LandmarkPredictions to add the new prediction to
+     * @param annotation The EntityAnnotation to build the LandmarkPrediction from
+     */
+    private void addLandmarkPredictionTo(
+            ArrayList<LandmarkPrediction> landmarkPredictions,
+            EntityAnnotation annotation
+    ){
+        LocationInfo info = annotation.getLocationsList().listIterator().next();
+        LatLng coordinates = info.getLatLng();
+        LandmarkPrediction landmarkPrediction = new LandmarkPrediction(
+                annotation.getDescription(),
+                annotation.getScore(),
+                String.valueOf(coordinates.getLatitude()),
+                String.valueOf(coordinates.getLongitude())
+        );
+        landmarkPredictions.add(landmarkPrediction);
     }
 }
 

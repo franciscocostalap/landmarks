@@ -7,6 +7,7 @@ import com.google.pubsub.v1.ProjectSubscriptionName;
 import pt.isel.cn.message.MessageReceiveHandler;
 
 import static pt.isel.cn.Constants.PROJECT_ID;
+import static pt.isel.cn.Constants.SUBSCRIPTION_NAME;
 
 public class PubSubClient {
     private final MessageReceiveHandler msgHandler;
@@ -15,6 +16,9 @@ public class PubSubClient {
         this.msgHandler = msgHandler;
     }
 
+    /**
+     * Starts the subscriber consumers.
+     */
     public void startConsumer() {
         ExecutorProvider executorProvider = InstantiatingExecutorProvider
                 .newBuilder()
@@ -24,7 +28,7 @@ public class PubSubClient {
 
 
         ProjectSubscriptionName subscriptionName =
-                ProjectSubscriptionName.of(PROJECT_ID, Constants.SUBSCRIPTION_NAME);
+                ProjectSubscriptionName.of(PROJECT_ID, SUBSCRIPTION_NAME);
 
         Subscriber subscriber =
                 Subscriber.newBuilder(subscriptionName, msgHandler)

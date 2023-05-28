@@ -21,6 +21,11 @@ public class MessageReceiveHandler implements MessageReceiver {
         this.service = service;
     }
 
+    /**
+     * Parses the message to get the request id and handles
+     * @param msg message received from PubSub
+     * @param ackReply
+     */
     @Override
     public void receiveMessage(PubsubMessage msg, AckReplyConsumer ackReply) {
         System.out.println("Message received on Thread: " + Thread.currentThread().getName() +
@@ -30,17 +35,26 @@ public class MessageReceiveHandler implements MessageReceiver {
         String gcsUrl = "gs://" + requestID.bucketName + "/" + requestID.blobName;
 
         try {
+            //TODO: Discuss if it should not make a request to the Vision API if the document is already stored
             if(!service.isAlreadyStored(requestID.blobName)){
-                ArrayList<LandmarkPrediction> landmarksPredictions = service.getLandmarksPredictions(gcsUrl);
-                service.storeLandmarksPredictions(requestID.blobName, landmarksPredictions);
-            }else{ System.out.println("Predictions for " + requestID.blobName + " already stored, skipping..."); }
+                ArrayList<LandmarkPrediction> landmarkPredictions =
+                        service.fetchLandmarksToFirestore(requestID.blobName, gcsUrl);
+                service.fetchStaticMapsToCloudStorage(requestID.blobName, landmarkPredictions);
+            }else{
+                System.out.println("Predictions for " + requestID.blobName + " already stored, skipping...");
+            }
             ackReply.ack();
         } catch (ExecutionException | InterruptedException | IOException e) {
-            // TODO: handle exception
+            ackReply.nack();
             e.printStackTrace();
         }
     }
 
+    /**
+     * Parses the message to get the request id
+     * @param msg message received from PubSub
+     * @return the request id [RequestID] parsed from the message
+     */
     private RequestID getMessageRequestID(PubsubMessage msg) {
         String jsonContent = msg.getData().toStringUtf8();
         JsonObject json = JsonParser.parseString(jsonContent).getAsJsonObject();

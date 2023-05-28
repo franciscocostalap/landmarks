@@ -3,6 +3,8 @@ package pt.isel.cn;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.FirestoreOptions;
+import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageOptions;
 import pt.isel.cn.firestore.FirestoreRepository;
 import pt.isel.cn.message.MessageReceiveHandler;
 import pt.isel.cn.message.MessageService;
@@ -23,12 +25,13 @@ public class Main {
                 .newBuilder().setCredentials(credentials).build();
         Firestore db = options.getService();
 
+        Storage storage = StorageOptions.getDefaultInstance().getService();
+
         final VisionAPIClient visionAPIClient = new VisionAPIClient();
         final MapsAPIClient mapsAPIClient = new MapsAPIClient(apiKey);
         final FirestoreRepository firestoreRepository = new FirestoreRepository(db, FIRESTORE_COLLECTION_NAME);
 
-        final MessageService service = new MessageService(visionAPIClient, mapsAPIClient, firestoreRepository);
-
+        final MessageService service = new MessageService(visionAPIClient, mapsAPIClient, firestoreRepository, storage);
         final MessageReceiveHandler msgHandler = new MessageReceiveHandler(service);
 
         final PubSubClient pubSubClient = new PubSubClient(msgHandler);

@@ -2,14 +2,7 @@ package pt.isel.cn.firestore;
 
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
-import pt.isel.cn.vision.LandmarkPrediction;
-
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ExecutionException;
-
-import static java.util.stream.Collectors.toCollection;
 
 public class FirestoreRepository implements Repository<FirestoreDocument, String>{
 
@@ -21,6 +14,13 @@ public class FirestoreRepository implements Repository<FirestoreDocument, String
         this.collectionName = collectionName;
     }
 
+    /**
+     * Get a document from the Firestore database
+     * @param id The document id
+     * @return a [FirestoreDocument] object
+     * @throws ExecutionException
+     * @throws InterruptedException
+     */
     @Override
     public FirestoreDocument getByID(String id) throws ExecutionException, InterruptedException {
         CollectionReference collectionRef = firestore.collection(collectionName);
@@ -28,10 +28,16 @@ public class FirestoreRepository implements Repository<FirestoreDocument, String
 
         ApiFuture<DocumentSnapshot> future = docRef.get();
         DocumentSnapshot documentSnapshot = future.get();
-        System.out.println(documentSnapshot.toObject(FirestoreDocument.class));
         return documentSnapshot.toObject(FirestoreDocument.class);
     }
 
+    /**
+     * Save a document in the Firestore database
+     * @param document The document [FirestoreDocument] to save
+     * @param name The document's name
+     * @throws ExecutionException
+     * @throws InterruptedException
+     */
     @Override
     public void save(FirestoreDocument document, String name) throws ExecutionException, InterruptedException {
         CollectionReference collectionRef = firestore.collection(collectionName);

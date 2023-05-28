@@ -1,8 +1,8 @@
 package pt.isel.cn.message;
 
 public class RequestID {
-    public final String bucketName;
-    public final String blobName;
+    public String bucketName;
+    public String blobName;
 
     public RequestID(String bucketName, String blobName) {
         this.bucketName = bucketName;
@@ -15,6 +15,14 @@ public class RequestID {
 
     public String getBlobName() {
         return blobName;
+    }
+
+    public void setBucketName(String bucketName) {
+        this.bucketName = bucketName;
+    }
+
+    public void setBlobName(String blobName) {
+        this.blobName = blobName;
     }
 
     public String toString() {
