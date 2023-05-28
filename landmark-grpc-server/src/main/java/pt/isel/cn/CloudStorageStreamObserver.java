@@ -14,42 +14,30 @@ public class CloudStorageStreamObserver implements StreamObserver<ImageSubmissio
 
     private static final Logger logger = Logger.getLogger(CloudStorageStreamObserver.class.getName());
 
-    private WriteChannel writeChannel;
     private final StreamObserver<ImageSubmissionResponse> responseObserver;
     private BlobId blobId;
-    private final BlobInfo.Builder blobInfoBuilder;
-    private final Storage storage;
+    private final StreamObjectUpload streamObjectUpload;
 
     public CloudStorageStreamObserver(
             Storage storage,
             BlobInfo.Builder blobInfoBuilder,
             StreamObserver<ImageSubmissionResponse> responseObserver
     ){
-        this.storage = storage;
-        this.blobInfoBuilder = blobInfoBuilder;
         this.responseObserver = responseObserver;
+        this.streamObjectUpload = new StreamObjectUpload(storage, blobInfoBuilder);
     }
 
     @Override
     public void onNext(ImageSubmissionChunk imageSubmissionChunk) {
         try{
-            logger.info("Received chunk of size: " + imageSubmissionChunk.getChunkData().size());
             byte[] chunkData = imageSubmissionChunk.getChunkData().toByteArray();
-
-            if(writeChannel == null){
-                String contentType = ImageContentTypeChecker.getContentType(chunkData);
-                BlobInfo blobInfo = blobInfoBuilder.setContentType(contentType).build();
-                this.writeChannel = this.storage.writer(blobInfo);
-                this.blobId = blobInfo.getBlobId();
-            }
-
-            writeChannel.write(java.nio.ByteBuffer.wrap(chunkData, 0, chunkData.length));
+            this.blobId = streamObjectUpload.storeObject(chunkData, chunkData.length);
         }catch(IOException e){
-            try{
-                responseObserver.onError(e);
-                responseObserver.onCompleted();
-                writeChannel.close();
-            }catch (IOException e2){
+            responseObserver.onError(e);
+            responseObserver.onCompleted();
+            try {
+                streamObjectUpload.closeWriteChannel();
+            } catch (IOException e2) {
                 e2.printStackTrace();
             }
         }
@@ -60,7 +48,7 @@ public class CloudStorageStreamObserver implements StreamObserver<ImageSubmissio
         try{
             logger.info("Error occurred: " + throwable.getMessage());
             responseObserver.onCompleted();
-            writeChannel.close();
+            streamObjectUpload.closeWriteChannel();
         }catch (IOException e){
             e.printStackTrace();
         }
@@ -77,7 +65,7 @@ public class CloudStorageStreamObserver implements StreamObserver<ImageSubmissio
                     ImageSubmissionResponse.newBuilder().setRequestId(blobName + "-" + blobBucket).build();
             responseObserver.onNext(imageSubmissionResponse);
             responseObserver.onCompleted();
-            writeChannel.close();
+            streamObjectUpload.closeWriteChannel();
         }catch (IOException e){
             e.printStackTrace();
         }

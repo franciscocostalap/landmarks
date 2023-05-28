@@ -29,7 +29,7 @@ public class StreamObjectUpload implements IStreamObjectUpload {
      * @return the BlobId of the object stored
      */
     @Override
-    public BlobId storeObject(byte[] bytes, int bytesSize) {
+    public BlobId storeObject(byte[] bytes, int bytesSize) throws IOException {
         if(writeChannel == null){
             String contentType = ImageContentTypeChecker.getContentType(bytes);
             BlobInfo blobInfo = blobInfoBuilder.setContentType(contentType).build();
@@ -44,9 +44,9 @@ public class StreamObjectUpload implements IStreamObjectUpload {
             try {
                 writeChannel.close();
             } catch (IOException e2) {
-                throw new RuntimeException(e2);
+                e2.printStackTrace();
             }
-            throw new RuntimeException(e);
+            throw e;
         }
     }
 
@@ -54,11 +54,7 @@ public class StreamObjectUpload implements IStreamObjectUpload {
      * Closes the write channel.
      */
     @Override
-    public void closeWriteChannel() {
-        try {
-            writeChannel.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public void closeWriteChannel() throws IOException {
+        writeChannel.close();
     }
 }
