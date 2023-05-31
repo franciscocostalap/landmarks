@@ -11,8 +11,10 @@ service LandmarkDetectionService {
   rpc isAlive(Void) returns (Text);
   // Submits an image for monument detection
   rpc SubmitImage(stream ImageSubmissionChunk) returns (ImageSubmissionResponse);
-  // Retrieves the result of a submitted image
+  // Retrieves the landmark list result of a submitted image
   rpc GetSubmissionResult(GetSubmissionResultRequest) returns (GetSubmissionResultResponse);
+  // Retrieves the landmark list result of a submitted image filtered by confidence threshold
+  rpc GetLandmarkListByConfidenceThresholdResult(GetSubmissionResultByConfidenceThresholdRequest) returns (GetLandmarkListByConfidenceThresholdResponse);
 }
 
 message Void {
@@ -37,22 +39,31 @@ message GetSubmissionResultRequest {
   string request_id = 1;
 }
 
-message Landmark {
-  string name = 1;
-
-  double latitude = 2;
-  double longitude = 3;
-
-  double confidence = 4;
+message GetSubmissionResultByConfidenceThresholdRequest {
+  string confidence = 1;
 }
 
-message LocationMap {
-  string location_name = 1;
-
-  bytes map_image = 2;
+message Landmark {
+  string name = 1;
+  double latitude = 2;
+  double longitude = 3;
+  double confidence = 4;
 }
 
 message GetSubmissionResultResponse {
   repeated Landmark landmarks = 1;
-  repeated LocationMap location_maps = 2;
+  bytes map_image = 2;
+}
+
+message MonumentFilteredByConfidenceThreshold {
+  string monument_image_name = 1;
+  string identified_landmark = 2;
+}
+
+message GetLandmarkListResultResponse {
+  repeated Landmark landmarks = 1;
+}
+
+message GetLandmarkListByConfidenceThresholdResponse {
+  repeated MonumentFilteredByConfidenceThreshold monument = 1;
 }
