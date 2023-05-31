@@ -17,7 +17,6 @@ public class ChannelManager {
     public ChannelManager(String IPLookupURL, int svcPort){
         this.IPLookupURL = IPLookupURL;
         this.svcPort = svcPort;
-        getPossibleServers();
     }
 
     private static LandmarkDetectionServiceGrpc.LandmarkDetectionServiceBlockingStub blockingStub;

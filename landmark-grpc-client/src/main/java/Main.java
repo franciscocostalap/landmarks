@@ -1,14 +1,14 @@
 import com.google.protobuf.ByteString;
 import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import landmark_service.*;
+import landmark_service.Void;
+import observers.ImageSubmissionResponseStreamObserver;
+import observers.ImageSubmitResponseStreamObserver;
+import observers.ThresholdImagesResponseStreamObserver;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -41,7 +41,7 @@ class App {
 
     private static App __instance = null;
     private final HashMap<Option,ClientWorker> __AppMethods;
-    private final ChannelManager channelManager;
+   // private final ChannelManager channelManager;
     private ManagedChannel channel;
 
     private App(int svcPort) {
@@ -49,12 +49,24 @@ class App {
         __AppMethods.put(Option.SubmitImage, new ClientWorker() {public void doWork() {App.this.SubmitImage();}});
         __AppMethods.put(Option.GetSubmissionResult, new ClientWorker() {public void doWork() {App.this.GetSubmissionResult();}});
         __AppMethods.put(Option.GetLandmarkListByConfidenceThresholdResult, new ClientWorker() {public void doWork() {App.this.GetLandmarkListByConfidenceThresholdResult();}});
-        channelManager = new ChannelManager(IPLookupURL, svcPort);
+       // channelManager = new ChannelManager(IPLookupURL, svcPort);
     }
 
     private void StartUp() throws Exception {
         System.out.println("Starting up...");
-        channel = channelManager.getChannel();
+       // channel = channelManager.getChannel();
+
+        ImageSubmitResponseStreamObserver responseObserver = new ImageSubmitResponseStreamObserver();
+        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 7500).usePlaintext().build();
+        logger.info("Waiting for connection to be ready...");
+
+        LandmarkDetectionServiceGrpc.LandmarkDetectionServiceBlockingStub blockingStub = LandmarkDetectionServiceGrpc.newBlockingStub(channel);
+
+
+            blockingStub.isAlive(Void.newBuilder().build());
+
+
+
         asyncStub = LandmarkDetectionServiceGrpc.newStub(channel);
         System.out.println("Starting up complete.");
         System.out.println();
@@ -103,9 +115,15 @@ class App {
             clearConsole();
             try {
                 __AppMethods.get(userInput).doWork();
+                System.out.println("Press any key to continue...");
+                System.in.read();
+            }catch (IllegalArgumentException ex) {
+                System.out.println(ex.getMessage());
+                System.out.flush();
+                System.out.println("Press any key to continue...");
                 System.in.read();
             }
-            catch(NullPointerException ex) {
+            catch( NullPointerException ex) {
                 //Nothing to do. The option was not a valid one. Read another.
             }
 
@@ -113,39 +131,36 @@ class App {
     }
 
 
-    private void printResults(ResultSet dr) {
-        //TODO
-    }
-
-    private void PrintLandMark(Landmark landmark){
-        System.out.println("Landmark: ");
-        System.out.println("Name: " + landmark.getName());
-        System.out.println("Latitude: " + landmark.getLatitude() + " Longitude: " + landmark.getLongitude());
-        System.out.println("Confidence: " + landmark.getConfidence());
-    }
-
-
     //---------------------
+
+    private Path verifyImage(String imagePath){
+        try {
+            Path path = Paths.get(imagePath);
+            String contentType = Files.probeContentType(path);
+            if (!contentType.equals("image/jpeg") && !contentType.equals("image/png")) {
+                logger.severe("File is not a .jpeg or .png image.");
+                System.out.println("File is not a .jpeg or .png image.");
+                throw new IllegalArgumentException("File is not a .jpeg or .png image.");
+            }
+            return path;
+        } catch(Exception ex) {
+            logger.severe("File not found.");
+            throw new IllegalArgumentException("File not found.");
+        }
+    }
 
     private void SubmitImage() {
         ImageSubmitResponseStreamObserver responseObserver = new ImageSubmitResponseStreamObserver();
         Scanner s = new Scanner(System.in);
 
+        System.out.println("Enter the path to the image you want to submit(.JPEG or .PNG):");
+        String imagePath = s.nextLine();
+        Path path = verifyImage(imagePath);
 
         try{
+
             StreamObserver<ImageSubmissionChunk> serverStreamObserver = asyncStub.submitImage(responseObserver);
             logger.info("Sending image chunks...");
-
-            System.out.println("Enter the path to the image you want to submit:");
-            String imagePath = s.nextLine();
-
-            Path path = Paths.get(imagePath);
-            String contentType = Files.probeContentType(path);
-            if(!contentType.equals("image/jpeg") && !contentType.equals("image/png")){
-                logger.severe("File is not a .jpeg or .png image.");
-                System.out.println("File is not a .jpeg or .png image.");
-                return;
-            }
 
             byte[] buffer = new byte[1024];
             int bytesRead;
@@ -177,60 +192,64 @@ class App {
         }
     }
 
+    private void verifyID(String id){
+        if(id == null || id.isEmpty()){
+            logger.severe("ID is null or empty.");
+            throw new IllegalArgumentException("ID is null or empty.");
+        }
+        try{
+            String[] parts = id.split(";");
+            String p1 = parts[0];
+            String p2 = parts[1];
+        }catch (Exception e){
+            throw new IllegalArgumentException("Invalid ID");
+        }
+    }
+
     private void GetSubmissionResult() {
         Scanner s = new Scanner(System.in);
         System.out.println("Enter the ID of the submission you want to get the result:");
         String id = s.nextLine();
+        verifyID(id);
+
         GetSubmissionResultRequest submissionID = GetSubmissionResultRequest.newBuilder().setRequestId(id).build();
-        asyncStub.getSubmissionResult(submissionID, new StreamObserver<GetSubmissionResultResponse>() {
-            @Override
-            public void onNext(GetSubmissionResultResponse value) {
-                value.getLandmarksList().forEach(landmark -> PrintLandMark(landmark));
-                ByteString imgByteString = value.getMapImage();
+        ImageSubmissionResponseStreamObserver resultObserver = new ImageSubmissionResponseStreamObserver(id);
+        try {
+            asyncStub.getSubmissionResult(submissionID, resultObserver);
 
-                try {
-                    BufferedImage img = ImageIO.read(new ByteArrayInputStream(imgByteString.toByteArray()));
+            resultObserver.waitForCompletion();
+        } catch (Exception e) {
+            System.out.println("Could not get submission result: " + e.getMessage());
+        }
+    }
+    //landmark-bucket-tf;f6ab216507024db79f79ea7134faa3cf
 
-                    File outputfile = new File(id + "-map.png");
-                    ImageIO.write(img, "png", outputfile);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+    private double getThreshold(){
+        try{
+            Scanner s = new Scanner(System.in);
+            System.out.println("Enter the confidence threshold(e.g 0,3):");
+            double thresholdInput = s.nextDouble();
+            if(thresholdInput < 0 || thresholdInput > 1){
+                logger.severe("Threshold is not between 0 and 1.");
+                throw new IllegalArgumentException("Threshold is not between 0 and 1.");
             }
-
-            @Override
-            public void onError(Throwable t) {
-                System.out.println("Error: " + t.getMessage());
-            }
-
-            @Override
-            public void onCompleted() {
-            }
-        });
+            return thresholdInput;
+        }catch (Exception e){
+            System.out.println("Invalid threshold.");
+            return getThreshold();
+        }
     }
 
-
     private void GetLandmarkListByConfidenceThresholdResult() {
-        Scanner s = new Scanner(System.in);
-        System.out.println("Enter the confidence threshold:");
-        double thresholdInput = s.nextDouble();
+        double thresholdInput = getThreshold();
         GetSubmissionResultByConfidenceThresholdRequest threshold = GetSubmissionResultByConfidenceThresholdRequest.newBuilder().setConfidence(thresholdInput).build();
-//        asyncStub.getLandmarkListByConfidenceThresholdResult(threshold, new StreamObserver<GetLandmarkListByConfidenceThresholdResponse>() {
-//            @Override
-//            public void onNext(GetLandmarkListByConfidenceThresholdResponse value) {
-//                value
-//            }
-//
-//            @Override
-//            public void onError(Throwable t) {
-//                System.out.println("Error: " + t.getMessage());
-//            }
-//
-//            @Override
-//            public void onCompleted() {
-//            }
-//        });
-//TODO: finish this
+        ThresholdImagesResponseStreamObserver resultObserver = new ThresholdImagesResponseStreamObserver();
+        try{
+            asyncStub.getLandmarkListByConfidenceThresholdResult(threshold,resultObserver);
+            resultObserver.waitForCompletion();
+        }catch (Exception e){
+            System.out.println("Could not get submission result: " + e.getMessage());
+        }
     }
 
 

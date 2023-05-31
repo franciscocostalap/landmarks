@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.logging.Logger;
 
 import static pt.isel.cn.Constants.LANDMARK_BUCKET;
+import static pt.isel.cn.Constants.STATIC_IMAGE_BUCKET;
 
 public class CloudStorageAccess {
     private static final Logger logger = Logger.getLogger(CloudStorageAccess.class.getName());
@@ -28,12 +29,8 @@ public class CloudStorageAccess {
         this.storage = storage;
     }
 
-    public byte[] getBlobContent(String id) {
-        String[] blobIdParts = id.split(delimiter);
-        String bucketName = blobIdParts[0];
-        String blobName = blobIdParts[1];
-
-        BlobId blobId = BlobId.of(bucketName, blobName);
+    public byte[] getBlobContent(String blobName) {
+        BlobId blobId = BlobId.of(STATIC_IMAGE_BUCKET, blobName);
         Blob blob = storage.get(blobId);
 
         byte [] content = null;

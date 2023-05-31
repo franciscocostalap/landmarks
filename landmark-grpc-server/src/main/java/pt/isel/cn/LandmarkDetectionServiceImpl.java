@@ -5,20 +5,18 @@ import com.google.cloud.firestore.Firestore;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.protobuf.ByteString;
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import landmark_service.*;
 import landmark_service.Void;
-import pt.isel.cn.firestore.FirestoreDocument;
 import pt.isel.cn.firestore.FirestoreRepository;
 import pt.isel.cn.firestore.LandmarkPrediction;
 import pt.isel.cn.firestore.Pair;
 import pt.isel.cn.utils.RandomNameGenerator;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static pt.isel.cn.Constants.FIRESTORE_COLLECTION;
 
 public class LandmarkDetectionServiceImpl extends LandmarkDetectionServiceGrpc.LandmarkDetectionServiceImplBase{
 
@@ -68,14 +66,15 @@ public class LandmarkDetectionServiceImpl extends LandmarkDetectionServiceGrpc.L
     {
         logger.info( "Received submission result request with id " + request.getRequestId());
         String[] parts = request.getRequestId().split(";");
-        String blobName = parts[1];
+
         try {
+            String blobName = parts[1];
 
             List<LandmarkPrediction> landmarkPredictions =
                     firestoreRepository.getAll(blobName);
 
             byte[] landmarkStaticImage = cloudStorageAccess.getBlobContent(blobName + "-0");
-
+            logger.info("Landmark static image retrieved from cloud storage.");
             List<Landmark> landmarks = landmarkPredictions.stream().map(prediction ->
                     {
                         float score = prediction.getScore();
@@ -88,18 +87,20 @@ public class LandmarkDetectionServiceImpl extends LandmarkDetectionServiceGrpc.L
                     }
             ).collect(Collectors.toList());
 
-
+            logger.info( landmarks.size() + " landmarks found.");
 
             GetSubmissionResultResponse submissionResultResponse = GetSubmissionResultResponse.newBuilder()
                     .addAllLandmarks(landmarks)
                     .setMapImage(ByteString.copyFrom(landmarkStaticImage))
                     .build();
+            logger.info("Sending response to client.");
             responseObserver.onNext(submissionResultResponse);
             responseObserver.onCompleted();
+            logger.info("Response sent to client.");
 
         } catch (RuntimeException e) {
-            responseObserver.onError(new Exception("Landmark predictions not found."));
-            responseObserver.onCompleted();
+            var status = Status.NOT_FOUND.withDescription("Landmark predictions not found.");
+            responseObserver.onError(status.asException());
             e.printStackTrace();
         }
     }
@@ -114,6 +115,15 @@ public class LandmarkDetectionServiceImpl extends LandmarkDetectionServiceGrpc.L
         List<Pair<String, List<LandmarkPrediction>>> filteredLandmarks =
                 firestoreRepository.getByThresholdScore(request.getConfidence());
 
+        if(filteredLandmarks.isEmpty()){
+            logger.info("Landmark predictions not found.");
+            var status = Status.NOT_FOUND.withDescription("Landmark predictions not found.");
+            responseObserver.onError(status.asException());
+            responseObserver.onCompleted();
+            return;
+        }
+
+        logger.info("Landmark predictions found.");
         List<MonumentFilteredByConfidenceThreshold> result = filteredLandmarks.stream().flatMap(pair -> {
             return pair.getSecond().stream().map(landmark ->{
                 return MonumentFilteredByConfidenceThreshold.newBuilder()
@@ -123,9 +133,14 @@ public class LandmarkDetectionServiceImpl extends LandmarkDetectionServiceGrpc.L
                 });
         }).collect(Collectors.toList());
 
-        GetLandmarkListByConfidenceThresholdResponse.newBuilder()
+
+        GetLandmarkListByConfidenceThresholdResponse response = GetLandmarkListByConfidenceThresholdResponse.newBuilder()
                 .addAllMonument(result)
                 .build();
+        logger.info("Sending response to client.");
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+        logger.info("Response sent to client.");
     }
 
 

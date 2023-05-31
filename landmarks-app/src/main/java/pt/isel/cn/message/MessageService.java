@@ -47,8 +47,12 @@ public class MessageService {
     public ArrayList<LandmarkPrediction> fetchLandmarksToFirestore(
             String blobName,
             String gcsUrl
-    ) throws ExecutionException, InterruptedException, IOException {
+    ) throws ExecutionException, InterruptedException, IOException, NoLandMarkFoundException {
         ArrayList<LandmarkPrediction> landmarkPredictions = visionAPIClient.detectLandmarksGcs(gcsUrl);
+        if(landmarkPredictions.isEmpty()){
+            System.out.println("No landmarks detected");
+            throw new NoLandMarkFoundException("No landmarks detected");
+        }
         System.out.println("Storing predictions for " + blobName);
         landmarkPredictions.forEach( landmarkPrediction -> {
             try {

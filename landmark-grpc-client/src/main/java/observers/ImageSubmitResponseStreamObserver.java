@@ -1,9 +1,11 @@
+package observers;
+
 import io.grpc.stub.StreamObserver;
 import landmark_service.ImageSubmissionResponse;
 
 import java.util.concurrent.CountDownLatch;
 
-public class ImageSubmitResponseStreamObserver implements StreamObserver<ImageSubmissionResponse> {
+public class ImageSubmitResponseStreamObserver implements LandmarkObserver<ImageSubmissionResponse> {
 
     private Boolean hasErrorOccurred = false;
     private String requestId;
@@ -17,6 +19,7 @@ public class ImageSubmitResponseStreamObserver implements StreamObserver<ImageSu
     @Override
     public void onError(Throwable throwable) {
         hasErrorOccurred = true;
+        latch.countDown();
     }
 
     @Override
@@ -24,6 +27,7 @@ public class ImageSubmitResponseStreamObserver implements StreamObserver<ImageSu
         latch.countDown();
     }
 
+    @Override
     public void waitForCompletion() throws InterruptedException {
         latch.await();
     }

@@ -11,6 +11,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
+import static pt.isel.cn.Constants.MESSAGE_ATTRIBUTE_KEY;
+
 public class MessageReceiveHandler implements MessageReceiver {
 
     private static final String idDelimiter = ";";
@@ -40,10 +42,13 @@ public class MessageReceiveHandler implements MessageReceiver {
             service.fetchStaticMapsToCloudStorage(requestID.blobName, landmarkPredictions);
 
             ackReply.ack();
-        } catch (ExecutionException | InterruptedException | IOException e) {
+        } catch (NoLandMarkFoundException e) {
+            ackReply.ack();
+        } catch (ExecutionException | InterruptedException | RuntimeException | IOException e ) {
             ackReply.nack();
             e.printStackTrace();
         }
+
     }
 
     /**
@@ -52,9 +57,7 @@ public class MessageReceiveHandler implements MessageReceiver {
      * @return the request id [RequestID] parsed from the message
      */
     private RequestID getMessageRequestID(PubsubMessage msg) {
-        String jsonContent = msg.getData().toStringUtf8();
-        JsonObject json = JsonParser.parseString(jsonContent).getAsJsonObject();
-        String request_id = json.get(messageProperty).getAsString();
+        String request_id = msg.getAttributesOrThrow(MESSAGE_ATTRIBUTE_KEY);
         String[] msgParts = request_id.split(idDelimiter);
         String bucketName = msgParts[0];
         String blobName = msgParts[1];

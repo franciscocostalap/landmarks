@@ -29,7 +29,7 @@ public class Main {
 
         final VisionAPIClient visionAPIClient = new VisionAPIClient();
         final MapsAPIClient mapsAPIClient = new MapsAPIClient(apiKey);
-        final FirestoreRepository firestoreRepository = new FirestoreRepository(db, FIRESTORE_COLLECTION_NAME);
+        final FirestoreRepository firestoreRepository = new FirestoreRepository(db);
 
         final MessageService service = new MessageService(visionAPIClient, mapsAPIClient, firestoreRepository, storage);
         final MessageReceiveHandler msgHandler = new MessageReceiveHandler(service);

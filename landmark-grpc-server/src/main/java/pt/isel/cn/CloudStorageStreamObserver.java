@@ -62,12 +62,13 @@ public class CloudStorageStreamObserver implements StreamObserver<ImageSubmissio
         try {
             String blobName = blobId.getName();
             String blobBucket = blobId.getBucket();
+            String newID = blobBucket + ";" + blobName;
             ImageSubmissionResponse imageSubmissionResponse =
-                    ImageSubmissionResponse.newBuilder().setRequestId(blobBucket + ";" + blobName).build();
+                    ImageSubmissionResponse.newBuilder().setRequestId(newID).build();
             responseObserver.onNext(imageSubmissionResponse);
             responseObserver.onCompleted();
             logger.info("Completed upload of blob: " + blobId.getName());
-            cloudPubSubPublisher.publish(blobId.getName());
+            cloudPubSubPublisher.publish(newID);
             streamObjectUpload.closeWriteChannel();
         }catch (IOException e){
             e.printStackTrace();
