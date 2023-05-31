@@ -1,5 +1,8 @@
 package pt.isel.cn;
 
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.FirestoreOptions;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import io.grpc.Server;
@@ -12,12 +15,13 @@ import java.util.Scanner;
 import java.util.logging.Logger;
 
 import static pt.isel.cn.Constants.LANDMARK_BUCKET;
+import static pt.isel.cn.Constants.STATIC_IMAGE_BUCKET;
 
 public class Main {
 
     private static int svcPort = 7500;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         if (args.length > 0) {
             try {
                 int port = Integer.parseInt(args[0]);
@@ -41,14 +45,21 @@ public class Main {
                     "GOOGLE_APPLICATION_CREDENTIALS to the path of your service account key file.");
         logger.info("Project ID: " + projectId);
 
+        GoogleCredentials credentials =
+                GoogleCredentials.getApplicationDefault();
+        FirestoreOptions options = FirestoreOptions
+                .newBuilder().setCredentials(credentials).build();
+        Firestore db = options.getService();
+
         // por porto na env
         Server server = ServerBuilder.forPort(svcPort)
                 .addService(
                     new LandmarkDetectionServiceImpl(
-                    storage,
-                    new  UUIDRandomNameGenerator(),
-                    LANDMARK_BUCKET,
-                    new CloudPubSubPublisher()
+                        storage,
+                        new  UUIDRandomNameGenerator(),
+                        LANDMARK_BUCKET,
+                        new CloudPubSubPublisher(),
+                        db
                 )).build();
         try {
             logger.info("Starting server...");
