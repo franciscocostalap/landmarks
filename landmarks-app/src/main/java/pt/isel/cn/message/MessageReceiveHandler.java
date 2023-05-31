@@ -24,7 +24,7 @@ public class MessageReceiveHandler implements MessageReceiver {
     /**
      * Parses the message to get the request id and handles
      * @param msg message received from PubSub
-     * @param ackReply
+     * @param ackReply used to acknowledge the message
      */
     @Override
     public void receiveMessage(PubsubMessage msg, AckReplyConsumer ackReply) {
@@ -35,14 +35,10 @@ public class MessageReceiveHandler implements MessageReceiver {
         String gcsUrl = "gs://" + requestID.bucketName + "/" + requestID.blobName;
 
         try {
-            //TODO: Discuss if it should not make a request to the Vision API if the document is already stored
-            if(!service.isAlreadyStored(requestID.blobName)){
-                ArrayList<LandmarkPrediction> landmarkPredictions =
-                        service.fetchLandmarksToFirestore(requestID.blobName, gcsUrl);
-                service.fetchStaticMapsToCloudStorage(requestID.blobName, landmarkPredictions);
-            }else{
-                System.out.println("Predictions for " + requestID.blobName + " already stored, skipping...");
-            }
+            ArrayList<LandmarkPrediction> landmarkPredictions =
+                    service.fetchLandmarksToFirestore(requestID.blobName, gcsUrl);
+            service.fetchStaticMapsToCloudStorage(requestID.blobName, landmarkPredictions);
+
             ackReply.ack();
         } catch (ExecutionException | InterruptedException | IOException e) {
             ackReply.nack();

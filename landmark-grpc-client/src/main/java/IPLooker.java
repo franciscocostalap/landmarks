@@ -14,9 +14,6 @@ public class IPLooker {
             HttpURLConnection connection = (HttpURLConnection) request_uri.openConnection();
             connection.setRequestMethod("GET");
 
-            int responseCode = connection.getResponseCode();
-            System.out.println("Response Code: " + responseCode);
-
             BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 
             String line;

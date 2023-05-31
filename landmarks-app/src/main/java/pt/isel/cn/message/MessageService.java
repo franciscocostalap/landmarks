@@ -34,17 +34,6 @@ public class MessageService {
         this.storage = storage;
     }
 
-    /**
-     * Checks if the document with the name [blobName] is already stored in Firestore.
-     * @param blobName name of the document
-     * @return true if the document is already stored, false otherwise
-     * @throws ExecutionException
-     * @throws InterruptedException
-     */
-    public Boolean isAlreadyStored(String blobName) throws ExecutionException, InterruptedException {
-        FirestoreDocument document = firestoreRepository.getByID(blobName);
-        return document != null;
-    }
 
     /**
      * Fetches the landmarks predictions from the Vision API and stores them in Firestore.
@@ -61,8 +50,13 @@ public class MessageService {
     ) throws ExecutionException, InterruptedException, IOException {
         ArrayList<LandmarkPrediction> landmarkPredictions = visionAPIClient.detectLandmarksGcs(gcsUrl);
         System.out.println("Storing predictions for " + blobName);
-        FirestoreDocument document = new FirestoreDocument(landmarkPredictions);
-        firestoreRepository.save(document, blobName);
+        landmarkPredictions.forEach( landmarkPrediction -> {
+            try {
+                firestoreRepository.save(landmarkPrediction, blobName);
+            } catch (ExecutionException | InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
         return landmarkPredictions;
     }
 

@@ -2,50 +2,36 @@ package pt.isel.cn.firestore;
 
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
+import pt.isel.cn.vision.LandmarkPrediction;
+
 import java.util.concurrent.ExecutionException;
 
-public class FirestoreRepository implements Repository<FirestoreDocument, String>{
+public class FirestoreRepository implements Repository<LandmarkPrediction, String>{
 
     private final Firestore firestore;
-    private final String collectionName;
 
-    public FirestoreRepository(Firestore firestore, String collectionName){
+    public FirestoreRepository(Firestore firestore){
         this.firestore = firestore;
-        this.collectionName = collectionName;
     }
 
-    /**
-     * Get a document from the Firestore database
-     * @param id The document id
-     * @return a [FirestoreDocument] object
-     * @throws ExecutionException
-     * @throws InterruptedException
-     */
-    @Override
-    public FirestoreDocument getByID(String id) throws ExecutionException, InterruptedException {
-        CollectionReference collectionRef = firestore.collection(collectionName);
-        DocumentReference docRef = collectionRef.document(id);
-
-        ApiFuture<DocumentSnapshot> future = docRef.get();
-        DocumentSnapshot documentSnapshot = future.get();
-        return documentSnapshot.toObject(FirestoreDocument.class);
-    }
 
     /**
      * Save a document in the Firestore database
-     * @param document The document [FirestoreDocument] to save
-     * @param name The document's name
+     * The document´s name will be the landmarkPrediction´s name
+     * @param landmarkPrediction The document [LandmarkPrediction] to save
+     * @param collectionName The collection's name
      * @throws ExecutionException
      * @throws InterruptedException
      */
     @Override
-    public void save(FirestoreDocument document, String name) throws ExecutionException, InterruptedException {
+    public void save(LandmarkPrediction landmarkPrediction, String collectionName) throws ExecutionException, InterruptedException {
         CollectionReference collectionRef = firestore.collection(collectionName);
-        DocumentReference docRef = collectionRef.document(name);
+        DocumentReference docRef = collectionRef.document(landmarkPrediction.getName());
 
-        ApiFuture<WriteResult> resultApiFuture = docRef.set(document);
+        ApiFuture<WriteResult> resultApiFuture = docRef.set(landmarkPrediction);
         WriteResult writeResult = resultApiFuture.get();
 
         System.out.println("Update time: " + writeResult.getUpdateTime());
+
     }
 }
