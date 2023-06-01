@@ -8,5 +8,6 @@ public class Constants {
     public static final String TOPIC_NAME = "landmarks-app-requests-id";
     public static final String MESSAGE_ATTRIBUTE_KEY = "request-id";
     public static final String FIRESTORE_COLLECTION = "ImageLandmarks";
+    public static final String NO_LANDMARKS_RESULT = "no-landmarks";
     public static final int CONTENT_TYPE_SIZE = 5;
 }

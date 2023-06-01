@@ -12,7 +12,7 @@ import java.util.concurrent.CountDownLatch;
 
 
 
-public class ImageSubmissionResponseStreamObserver implements LandmarkObserver<GetSubmissionResultResponse> {
+public class LandmarkListResponseStreamObserver implements LandmarkObserver<GetSubmissionResultResponse> {
     private final CountDownLatch latch = new CountDownLatch(1);
 
     private final String id;
@@ -24,7 +24,7 @@ public class ImageSubmissionResponseStreamObserver implements LandmarkObserver<G
         System.out.println("Confidence: " + landmark.getConfidence());
     }
 
-    public ImageSubmissionResponseStreamObserver(String id ){
+    public LandmarkListResponseStreamObserver(String id ){
         this.id = id;
     }
 

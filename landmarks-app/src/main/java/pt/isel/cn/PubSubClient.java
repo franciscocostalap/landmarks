@@ -6,11 +6,14 @@ import com.google.cloud.pubsub.v1.Subscriber;
 import com.google.pubsub.v1.ProjectSubscriptionName;
 import pt.isel.cn.message.MessageReceiveHandler;
 
+import java.util.logging.Logger;
+
 import static pt.isel.cn.Constants.PROJECT_ID;
 import static pt.isel.cn.Constants.SUBSCRIPTION_NAME;
 
 public class PubSubClient {
     private final MessageReceiveHandler msgHandler;
+    private static final Logger logger = Logger.getLogger(PubSubClient.class.getName());
 
     PubSubClient(MessageReceiveHandler msgHandler) {
         this.msgHandler = msgHandler;
@@ -25,7 +28,7 @@ public class PubSubClient {
                 .setExecutorThreadCount(5)
                 // uma só thread no handler
                 .build();
-
+        logger.info("Starting consumer...");
 
         ProjectSubscriptionName subscriptionName =
                 ProjectSubscriptionName.of(PROJECT_ID, SUBSCRIPTION_NAME);

@@ -4,7 +4,7 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import landmark_service.*;
 import landmark_service.Void;
-import observers.ImageSubmissionResponseStreamObserver;
+import observers.LandmarkListResponseStreamObserver;
 import observers.ImageSubmitResponseStreamObserver;
 import observers.ThresholdImagesResponseStreamObserver;
 
@@ -12,7 +12,6 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Scanner;
@@ -57,7 +56,7 @@ class App {
        // channel = channelManager.getChannel();
 
         ImageSubmitResponseStreamObserver responseObserver = new ImageSubmitResponseStreamObserver();
-        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 7500).usePlaintext().build();
+        ManagedChannel channel = ManagedChannelBuilder.forAddress("34.175.27.185", 7500).usePlaintext().build();
         logger.info("Waiting for connection to be ready...");
 
         LandmarkDetectionServiceGrpc.LandmarkDetectionServiceBlockingStub blockingStub = LandmarkDetectionServiceGrpc.newBlockingStub(channel);
@@ -213,14 +212,24 @@ class App {
         verifyID(id);
 
         GetSubmissionResultRequest submissionID = GetSubmissionResultRequest.newBuilder().setRequestId(id).build();
-        ImageSubmissionResponseStreamObserver resultObserver = new ImageSubmissionResponseStreamObserver(id);
+        LandmarkListResponseStreamObserver landmarkListResultObserver = new LandmarkListResponseStreamObserver(id);
         try {
-            asyncStub.getSubmissionResult(submissionID, resultObserver);
+            asyncStub.getSubmissionResult(submissionID, landmarkListResultObserver);
 
-            resultObserver.waitForCompletion();
+            landmarkListResultObserver.waitForCompletion();
         } catch (Exception e) {
             System.out.println("Could not get submission result: " + e.getMessage());
         }
+//        LandmarkImageObserver landmarkImageObserver = new LandmarkImageObserver();
+//        try{
+//            asyncStub.getLandmarkImage(index, LandmarkImageObserver);
+//
+//            landmarkImageObserver.waitForCompletion();
+//        }catch (Exception e) {
+//            System.out.println("Could not get landmark image: " + e.getMessage());
+//        }
+
+
     }
     //landmark-bucket-tf;f6ab216507024db79f79ea7134faa3cf
 

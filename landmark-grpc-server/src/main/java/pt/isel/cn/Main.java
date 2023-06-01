@@ -20,6 +20,7 @@ import static pt.isel.cn.Constants.STATIC_IMAGE_BUCKET;
 public class Main {
 
     private static int svcPort = 7500;
+    private static Server server;
 
     public static void main(String[] args) throws IOException {
         if (args.length > 0) {
@@ -35,43 +36,46 @@ public class Main {
                 System.out.println("Port must be a number");
             }
         }
-        System.out.println("Starting server on port " + svcPort);
-
         Logger logger = Logger.getLogger(Main.class.getName());
-        Storage storage = StorageOptions.getDefaultInstance().getService();
-        String projectId = storage.getOptions().getProjectId();
-        if (projectId == null)
-            throw new RuntimeException("Please set the environment variable " +
-                    "GOOGLE_APPLICATION_CREDENTIALS to the path of your service account key file.");
-        logger.info("Project ID: " + projectId);
-
-        GoogleCredentials credentials =
-                GoogleCredentials.getApplicationDefault();
-        FirestoreOptions options = FirestoreOptions
-                .newBuilder().setCredentials(credentials).build();
-        Firestore db = options.getService();
-
-        // por porto na env
-        Server server = ServerBuilder.forPort(svcPort)
-                .addService(
-                    new LandmarkDetectionServiceImpl(
-                        storage,
-                        new  UUIDRandomNameGenerator(),
-                        LANDMARK_BUCKET,
-                        new CloudPubSubPublisher(),
-                        db
-                )).build();
         try {
+            System.out.println("Starting server on port " + svcPort);
+
+
+            Storage storage = StorageOptions.getDefaultInstance().getService();
+            String projectId = storage.getOptions().getProjectId();
+            if (projectId == null)
+                throw new RuntimeException("Please set the environment variable " +
+                        "GOOGLE_APPLICATION_CREDENTIALS to the path of your service account key file.");
+            logger.info("Project ID: " + projectId);
+
+            GoogleCredentials credentials =
+                    GoogleCredentials.getApplicationDefault();
+            FirestoreOptions options = FirestoreOptions
+                    .newBuilder().setCredentials(credentials).build();
+            Firestore db = options.getService();
+
+            // por porto na env
+            server = ServerBuilder.forPort(svcPort)
+                    .addService(
+                        new LandmarkDetectionServiceImpl(
+                            storage,
+                            new  UUIDRandomNameGenerator(),
+                            LANDMARK_BUCKET,
+                            new CloudPubSubPublisher(),
+                            db
+                    )).build();
+
             logger.info("Starting server...");
             server.start();
             logger.info("Server started!");
-            Scanner scanner = new Scanner(System.in);
-            scanner.nextLine();
+           server.awaitTermination();
 
             logger.info("Server terminated!");
-        } catch (IOException e) {
+        } catch (Throwable e) {
+            logger.warning("Server interrupted!");
+            logger.warning(e.getMessage());
             e.printStackTrace();
-        }finally {
+        } finally {
             server.shutdown();
         }
     }
