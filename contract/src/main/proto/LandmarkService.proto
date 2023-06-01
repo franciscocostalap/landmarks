@@ -15,6 +15,17 @@ service LandmarkDetectionService {
   rpc GetSubmissionResult(GetSubmissionResultRequest) returns (GetSubmissionResultResponse);
   // Retrieves the landmark list result of a submitted image filtered by confidence threshold
   rpc GetLandmarkListByConfidenceThresholdResult(GetSubmissionResultByConfidenceThresholdRequest) returns (GetLandmarkListByConfidenceThresholdResponse);
+
+  rpc getLandmarkImage(GetLandmarkImageRequest) returns (GetLandmarkImageResponse);
+}
+
+message GetLandmarkImageRequest {
+  string request_id = 1;
+  int32 landmark_idx = 2;
+}
+
+message GetLandmarkImageResponse {
+  bytes landmark_image = 1;
 }
 
 message Void {
@@ -52,7 +63,6 @@ message Landmark {
 
 message GetSubmissionResultResponse {
   repeated Landmark landmarks = 1;
-  bytes map_image = 2;
 }
 
 message MonumentFilteredByConfidenceThreshold {

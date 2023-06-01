@@ -6,6 +6,7 @@ import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.protobuf.ByteString;
 import io.grpc.Status;
+import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
 import landmark_service.*;
 import landmark_service.Void;
@@ -91,7 +92,6 @@ public class LandmarkDetectionServiceImpl extends LandmarkDetectionServiceGrpc.L
 
             GetSubmissionResultResponse submissionResultResponse = GetSubmissionResultResponse.newBuilder()
                     .addAllLandmarks(landmarks)
-                    .setMapImage(ByteString.copyFrom(landmarkStaticImage))
                     .build();
             logger.info("Sending response to client.");
             responseObserver.onNext(submissionResultResponse);
@@ -103,6 +103,34 @@ public class LandmarkDetectionServiceImpl extends LandmarkDetectionServiceGrpc.L
             responseObserver.onError(status.asException());
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void getLandmarkImage(GetLandmarkImageRequest request, StreamObserver<GetLandmarkImageResponse> responseObserver) {
+        logger.info( "Received Landmark image map request with id " + request.getRequestId());
+        String[] parts = request.getRequestId().split(";");
+
+        try {
+            String blobName = parts[1];
+
+            byte[] landmarkStaticImage = cloudStorageAccess.getBlobContent(blobName + "-" + request.getLandmarkIdx());
+            logger.info("Landmark static image retrieved from cloud storage.");
+
+
+            GetLandmarkImageResponse landmarkImageResponse = GetLandmarkImageResponse.newBuilder()
+                    .setLandmarkImage(ByteString.copyFrom(landmarkStaticImage))
+                    .build();
+            logger.info("Sending response to client.");
+            responseObserver.onNext(landmarkImageResponse);
+            responseObserver.onCompleted();
+            logger.info("Response sent to client.");
+
+        } catch (RuntimeException e) {
+            var status = Status.NOT_FOUND.withDescription("Landmark map not found.");
+            responseObserver.onError(status.asException());
+            e.printStackTrace();
+        }
+
     }
 
     @Override

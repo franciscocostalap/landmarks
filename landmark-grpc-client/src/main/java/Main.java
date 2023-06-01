@@ -6,6 +6,7 @@ import landmark_service.*;
 import landmark_service.Void;
 import observers.ImageSubmissionResponseStreamObserver;
 import observers.ImageSubmitResponseStreamObserver;
+import observers.LandmarkImageResponseObserver;
 import observers.ThresholdImagesResponseStreamObserver;
 
 import java.io.*;
@@ -15,6 +16,7 @@ import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -131,6 +133,24 @@ class App {
     }
 
 
+    private void PrintLandMark(Landmark landmark){
+        System.out.println("  Landmark: ");
+        System.out.println("  Name: " + landmark.getName());
+        System.out.println("  Latitude: " + landmark.getLatitude() + " Longitude: " + landmark.getLongitude());
+        System.out.println("  Confidence: " + landmark.getConfidence());
+    }
+
+    private void PrintLandMarks(List<Landmark> landmarkList) {
+        int idx = 0;
+        for (Landmark landmark : landmarkList) {
+            System.out.println("Landmark nr:" +  idx++ + ".");
+            PrintLandMark(landmark);
+            System.out.println();
+        }
+    }
+
+
+
     //---------------------
 
     private Path verifyImage(String imagePath){
@@ -213,13 +233,42 @@ class App {
         verifyID(id);
 
         GetSubmissionResultRequest submissionID = GetSubmissionResultRequest.newBuilder().setRequestId(id).build();
-        ImageSubmissionResponseStreamObserver resultObserver = new ImageSubmissionResponseStreamObserver(id);
+        ImageSubmissionResponseStreamObserver resultObserver = new ImageSubmissionResponseStreamObserver();
+
         try {
             asyncStub.getSubmissionResult(submissionID, resultObserver);
 
             resultObserver.waitForCompletion();
         } catch (Exception e) {
             System.out.println("Could not get submission result: " + e.getMessage());
+        }
+        List<Landmark> landmarkList = resultObserver.getLandmarks();
+        if(landmarkList.size() == 0){
+            System.out.println("No landmarks found.");
+            return;
+        }
+        System.out.println("Landmarks found: " + landmarkList.size());
+
+        PrintLandMarks(landmarkList);
+
+        System.out.println("Enter the number of the landmark you want to get the map image from:");
+        int chosenIDX = s.nextInt();
+        if(chosenIDX < 0 || chosenIDX >= landmarkList.size()){
+            throw new IllegalArgumentException("Invalid option.");
+        }
+        String fileName = id + "-" + chosenIDX + "-map";
+        LandmarkImageResponseObserver landmarkImageObserver = new LandmarkImageResponseObserver(fileName);
+        GetLandmarkImageRequest requestInfo = GetLandmarkImageRequest
+                .newBuilder()
+                .setRequestId(id)
+                .setLandmarkIdx(chosenIDX)
+                .build();
+        try{
+            asyncStub.getLandmarkImage(requestInfo, landmarkImageObserver);
+
+            landmarkImageObserver.waitForCompletion();
+        }catch (Exception e) {
+            System.out.println("Could not get landmark image: " + e.getMessage());
         }
     }
     //landmark-bucket-tf;f6ab216507024db79f79ea7134faa3cf
