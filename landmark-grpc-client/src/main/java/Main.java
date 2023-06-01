@@ -232,7 +232,7 @@ class App {
         verifyID(id);
 
         GetSubmissionResultRequest submissionID = GetSubmissionResultRequest.newBuilder().setRequestId(id).build();
-        ImageSubmissionResponseStreamObserver landmarkListResultObserver = new ImageSubmissionResponseStreamObserver();
+        LandmarkListResponseStreamObserver landmarkListResultObserver = new LandmarkListResponseStreamObserver();
 
         try {
             asyncStub.getSubmissionResult(submissionID, landmarkListResultObserver);
@@ -241,7 +241,7 @@ class App {
         } catch (Exception e) {
             System.out.println("Could not get submission result: " + e.getMessage());
         }
-        List<Landmark> landmarkList = resultObserver.getLandmarks();
+        List<Landmark> landmarkList = landmarkListResultObserver.getLandmarks();
         if(landmarkList.size() == 0){
             System.out.println("No landmarks found.");
             return;
@@ -270,7 +270,6 @@ class App {
             System.out.println("Could not get landmark image: " + e.getMessage());
         }
     }
-    //landmark-bucket-tf;f6ab216507024db79f79ea7134faa3cf
 
     private double getThreshold(){
         try{
