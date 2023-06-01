@@ -43,7 +43,7 @@ public class MessageReceiveHandler implements MessageReceiver {
 
             ackReply.ack();
         } catch (NoLandMarkFoundException e) {
-            ackReply.ack();
+            ackReply.ack(); //TODO:
         } catch (ExecutionException | InterruptedException | RuntimeException | IOException e ) {
             ackReply.nack();
             e.printStackTrace();

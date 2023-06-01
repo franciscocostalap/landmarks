@@ -50,6 +50,7 @@ public class MessageService {
     ) throws ExecutionException, InterruptedException, IOException, NoLandMarkFoundException {
         ArrayList<LandmarkPrediction> landmarkPredictions = visionAPIClient.detectLandmarksGcs(gcsUrl);
         if(landmarkPredictions.isEmpty()){
+            firestoreRepository.save(null, blobName);
             System.out.println("No landmarks detected");
             throw new NoLandMarkFoundException("No landmarks detected");
         }

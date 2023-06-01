@@ -4,7 +4,12 @@ import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
 import pt.isel.cn.vision.LandmarkPrediction;
 
+import javax.annotation.Nullable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
+
+import static pt.isel.cn.Constants.NO_LANDMARKS_RESULT;
 
 public class FirestoreRepository implements Repository<LandmarkPrediction, String>{
 
@@ -24,14 +29,19 @@ public class FirestoreRepository implements Repository<LandmarkPrediction, Strin
      * @throws InterruptedException
      */
     @Override
-    public void save(LandmarkPrediction landmarkPrediction, String collectionName) throws ExecutionException, InterruptedException {
+    public void save(@Nullable LandmarkPrediction landmarkPrediction, String collectionName) throws ExecutionException, InterruptedException {
         CollectionReference collectionRef = firestore.collection(collectionName);
+       if(landmarkPrediction == null){
+           collectionRef
+                   .document(NO_LANDMARKS_RESULT)
+                   .set(new HashMap<>());
+          return;
+       }
         DocumentReference docRef = collectionRef.document(landmarkPrediction.getName());
 
         ApiFuture<WriteResult> resultApiFuture = docRef.set(landmarkPrediction);
         WriteResult writeResult = resultApiFuture.get();
 
         System.out.println("Update time: " + writeResult.getUpdateTime());
-
     }
 }

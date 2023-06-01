@@ -7,7 +7,7 @@ import java.util.concurrent.CountDownLatch;
 
 
 
-public class ImageSubmissionResponseStreamObserver implements LandmarkObserver<GetSubmissionResultResponse> {
+public class LandmarkListResponseStreamObserver implements LandmarkObserver<GetSubmissionResultResponse> {
     private final CountDownLatch latch = new CountDownLatch(1);
 
     private java.util.List<landmark_service.Landmark> landmarks = null;

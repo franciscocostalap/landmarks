@@ -2,12 +2,15 @@ package pt.isel.cn.firestore;
 
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
+import pt.isel.cn.NoLandMarkFoundException;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import static pt.isel.cn.Constants.NO_LANDMARKS_RESULT;
 
 public class FirestoreRepository implements Repository<LandmarkPrediction, String> {
 
@@ -17,7 +20,7 @@ public class FirestoreRepository implements Repository<LandmarkPrediction, Strin
         this.firestore = firestore;
     }
 
-    public List<LandmarkPrediction> getAll(String collectionName){
+    public List<LandmarkPrediction> getAll(String collectionName) throws NoLandMarkFoundException {
         CollectionReference collectionRef = firestore.collection(collectionName);
         Iterable<DocumentReference> documentReferences = collectionRef.listDocuments();
 
@@ -27,12 +30,18 @@ public class FirestoreRepository implements Repository<LandmarkPrediction, Strin
             try {
                 ApiFuture<DocumentSnapshot> future = documentReference.get();
                 DocumentSnapshot documentSnapshot = future.get();
+                if(documentSnapshot.getId() == NO_LANDMARKS_RESULT){
+                    return;
+                }
                 LandmarkPrediction landmarkPrediction = documentSnapshot.toObject(LandmarkPrediction.class);
                 documents.add(landmarkPrediction);
             } catch (ExecutionException | InterruptedException e) {
                 e.printStackTrace();
             }
         });
+        if(documents.isEmpty()){
+            throw new NoLandMarkFoundException("No landmarks found");
+        }
 
         if(documents.stream().anyMatch(Objects::isNull)){
             throw new RuntimeException("Error getting landmarks");
@@ -53,7 +62,6 @@ public class FirestoreRepository implements Repository<LandmarkPrediction, Strin
 
         Stream<CollectionReference> collectionReferenceList =
                 StreamSupport.stream(Spliterators.spliteratorUnknownSize(collections.iterator(), Spliterator.ORDERED),false);
-
 
         filteredLandmarks = collectionReferenceList.map(collectionReference -> {
             Pair<String, List<LandmarkPrediction>> pair;
@@ -85,7 +93,9 @@ public class FirestoreRepository implements Repository<LandmarkPrediction, Strin
      * @throws InterruptedException
      */
     private List<LandmarkPrediction> filterDocumentsBy(double scoreThreshold, CollectionReference collectionReference) throws ExecutionException, InterruptedException {
-        Query query = collectionReference.whereGreaterThanOrEqualTo("score", scoreThreshold);
+        Query query = collectionReference
+                .whereNotEqualTo(FieldPath.documentId(), NO_LANDMARKS_RESULT)
+                .whereGreaterThanOrEqualTo("score", scoreThreshold);
         ApiFuture<QuerySnapshot> future = query.get();
         List<QueryDocumentSnapshot> queryDocuments = future.get().getDocuments();
 

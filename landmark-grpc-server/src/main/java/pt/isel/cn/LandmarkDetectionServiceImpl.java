@@ -74,6 +74,7 @@ public class LandmarkDetectionServiceImpl extends LandmarkDetectionServiceGrpc.L
             List<LandmarkPrediction> landmarkPredictions =
                     firestoreRepository.getAll(blobName);
 
+
             byte[] landmarkStaticImage = cloudStorageAccess.getBlobContent(blobName + "-0");
             logger.info("Landmark static image retrieved from cloud storage.");
             List<Landmark> landmarks = landmarkPredictions.stream().map(prediction ->
@@ -98,6 +99,9 @@ public class LandmarkDetectionServiceImpl extends LandmarkDetectionServiceGrpc.L
             responseObserver.onCompleted();
             logger.info("Response sent to client.");
 
+        }catch (NoLandMarkFoundException e){
+            var status = Status.NOT_FOUND.withDescription("Landmark predictions do no exist for the ID:" + request.getRequestId());
+            responseObserver.onError(status.asException());
         } catch (RuntimeException e) {
             var status = Status.NOT_FOUND.withDescription("Landmark predictions not found.");
             responseObserver.onError(status.asException());

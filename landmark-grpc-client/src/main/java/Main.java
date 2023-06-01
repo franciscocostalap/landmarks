@@ -4,7 +4,7 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import landmark_service.*;
 import landmark_service.Void;
-import observers.ImageSubmissionResponseStreamObserver;
+import observers.LandmarkListResponseStreamObserver;
 import observers.ImageSubmitResponseStreamObserver;
 import observers.LandmarkImageResponseObserver;
 import observers.ThresholdImagesResponseStreamObserver;
@@ -13,7 +13,6 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -233,12 +232,12 @@ class App {
         verifyID(id);
 
         GetSubmissionResultRequest submissionID = GetSubmissionResultRequest.newBuilder().setRequestId(id).build();
-        ImageSubmissionResponseStreamObserver resultObserver = new ImageSubmissionResponseStreamObserver();
+        ImageSubmissionResponseStreamObserver landmarkListResultObserver = new ImageSubmissionResponseStreamObserver();
 
         try {
-            asyncStub.getSubmissionResult(submissionID, resultObserver);
+            asyncStub.getSubmissionResult(submissionID, landmarkListResultObserver);
 
-            resultObserver.waitForCompletion();
+            landmarkListResultObserver.waitForCompletion();
         } catch (Exception e) {
             System.out.println("Could not get submission result: " + e.getMessage());
         }
