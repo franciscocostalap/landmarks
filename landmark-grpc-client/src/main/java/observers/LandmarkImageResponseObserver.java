@@ -29,7 +29,7 @@ public class LandmarkImageResponseObserver implements LandmarkObserver<GetLandma
             System.out.println("Saving map image...");
             PrintStream writeTo = new PrintStream(Files.newOutputStream(Paths.get(fileName + ".png")));
             imgByteString.writeTo(writeTo);
-            System.out.println("Map image saved!");
+            System.out.println("Map image saved to:" + fileName + ".png" );
         } catch (IOException e) {
             e.printStackTrace();
         }

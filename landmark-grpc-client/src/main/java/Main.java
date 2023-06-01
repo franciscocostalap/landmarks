@@ -42,7 +42,7 @@ class App {
 
     private static App __instance = null;
     private final HashMap<Option,ClientWorker> __AppMethods;
-   // private final ChannelManager channelManager;
+    private final ChannelManager channelManager;
     private ManagedChannel channel;
 
     private App(int svcPort) {
@@ -50,24 +50,12 @@ class App {
         __AppMethods.put(Option.SubmitImage, new ClientWorker() {public void doWork() {App.this.SubmitImage();}});
         __AppMethods.put(Option.GetSubmissionResult, new ClientWorker() {public void doWork() {App.this.GetSubmissionResult();}});
         __AppMethods.put(Option.GetLandmarkListByConfidenceThresholdResult, new ClientWorker() {public void doWork() {App.this.GetLandmarkListByConfidenceThresholdResult();}});
-       // channelManager = new ChannelManager(IPLookupURL, svcPort);
+        channelManager = new ChannelManager(IPLookupURL, svcPort);
     }
 
     private void StartUp() throws Exception {
         System.out.println("Starting up...");
-       // channel = channelManager.getChannel();
-
-        ImageSubmitResponseStreamObserver responseObserver = new ImageSubmitResponseStreamObserver();
-        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 7500).usePlaintext().build();
-        logger.info("Waiting for connection to be ready...");
-
-        LandmarkDetectionServiceGrpc.LandmarkDetectionServiceBlockingStub blockingStub = LandmarkDetectionServiceGrpc.newBlockingStub(channel);
-
-
-            blockingStub.isAlive(Void.newBuilder().build());
-
-
-
+        channel = channelManager.getChannel();
         asyncStub = LandmarkDetectionServiceGrpc.newStub(channel);
         System.out.println("Starting up complete.");
         System.out.println();
@@ -315,8 +303,8 @@ public class Main {
             }
         }
         else {
-            System.out.println("Usage: java <Jar> <port>");
-            return;
+            System.out.println("Using default port: 7500");
+            svcPort = 7500;
         }
 
         App.getInstance(svcPort).Run();

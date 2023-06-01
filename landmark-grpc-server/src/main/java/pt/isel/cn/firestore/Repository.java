@@ -7,5 +7,5 @@ import java.util.concurrent.ExecutionException;
 
 public interface Repository<Document, Key> {
     List<LandmarkPrediction> getAll(String collectionName) throws NoLandMarkFoundException;
-    List<Pair<String, List<LandmarkPrediction>>> getByThresholdScore(double scoreThreshold);
+    List<Pair<String, List<LandmarkPrediction>>> getByThresholdScore(double scoreThreshold) throws NoLandMarkFoundException;
 }

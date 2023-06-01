@@ -56,7 +56,7 @@ public class FirestoreRepository implements Repository<LandmarkPrediction, Strin
      * @return a list of pairs of collection names and a list of predictions
      */
     @Override
-    public List<Pair<String, List<LandmarkPrediction>>> getByThresholdScore(double scoreThreshold)  {
+    public List<Pair<String, List<LandmarkPrediction>>> getByThresholdScore(double scoreThreshold) throws NoLandMarkFoundException {
         Iterable<CollectionReference> collections = firestore.listCollections();
         List<Pair<String, List<LandmarkPrediction>>> filteredLandmarks;
 
@@ -77,6 +77,7 @@ public class FirestoreRepository implements Repository<LandmarkPrediction, Strin
         }).collect(Collectors.toList());
 
 
+
         if(filteredLandmarks.stream().anyMatch(Objects::isNull)){
             throw new RuntimeException("Error getting landmarks");
         }
@@ -94,8 +95,8 @@ public class FirestoreRepository implements Repository<LandmarkPrediction, Strin
      */
     private List<LandmarkPrediction> filterDocumentsBy(double scoreThreshold, CollectionReference collectionReference) throws ExecutionException, InterruptedException {
         Query query = collectionReference
-                .whereNotEqualTo(FieldPath.documentId(), NO_LANDMARKS_RESULT)
                 .whereGreaterThanOrEqualTo("score", scoreThreshold);
+
         ApiFuture<QuerySnapshot> future = query.get();
         List<QueryDocumentSnapshot> queryDocuments = future.get().getDocuments();
 

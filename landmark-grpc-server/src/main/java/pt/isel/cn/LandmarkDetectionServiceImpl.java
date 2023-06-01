@@ -143,36 +143,36 @@ public class LandmarkDetectionServiceImpl extends LandmarkDetectionServiceGrpc.L
         StreamObserver<GetLandmarkListByConfidenceThresholdResponse> responseObserver
     ){
         logger.info("Received Request to get Landmark List by Confidence Threshold: " + request.getConfidence());
+        try {
+            List<Pair<String, List<LandmarkPrediction>>> filteredLandmarks =
+                    firestoreRepository.getByThresholdScore(request.getConfidence());
 
-        List<Pair<String, List<LandmarkPrediction>>> filteredLandmarks =
-                firestoreRepository.getByThresholdScore(request.getConfidence());
+            logger.info("Landmark predictions found.");
+            List<MonumentFilteredByConfidenceThreshold> result = filteredLandmarks.stream().flatMap(pair -> {
+                return pair.getSecond().stream().map(landmark -> {
+                    return MonumentFilteredByConfidenceThreshold.newBuilder()
+                            .setMonumentImageName(pair.getFirst())
+                            .setIdentifiedLandmark(landmark.getName())
+                            .build();
+                });
+            }).collect(Collectors.toList());
 
-        if(filteredLandmarks.isEmpty()){
-            logger.info("Landmark predictions not found.");
-            var status = Status.NOT_FOUND.withDescription("Landmark predictions not found.");
-            responseObserver.onError(status.asException());
+
+            GetLandmarkListByConfidenceThresholdResponse response = GetLandmarkListByConfidenceThresholdResponse.newBuilder()
+                    .addAllMonument(result)
+                    .build();
+            logger.info("Sending response to client.");
+            responseObserver.onNext(response);
             responseObserver.onCompleted();
-            return;
+            logger.info("Response sent to client.");
+
+        }catch(NoLandMarkFoundException e){
+            logger.info("Landmark predictions not found.");
+            var status = Status.NOT_FOUND.withDescription("Landmark predictions not found with the given confidence.");
+            responseObserver.onError(status.asException());
         }
 
-        logger.info("Landmark predictions found.");
-        List<MonumentFilteredByConfidenceThreshold> result = filteredLandmarks.stream().flatMap(pair -> {
-            return pair.getSecond().stream().map(landmark ->{
-                return MonumentFilteredByConfidenceThreshold.newBuilder()
-                        .setMonumentImageName(pair.getFirst())
-                        .setIdentifiedLandmark(landmark.getName())
-                        .build();
-                });
-        }).collect(Collectors.toList());
 
-
-        GetLandmarkListByConfidenceThresholdResponse response = GetLandmarkListByConfidenceThresholdResponse.newBuilder()
-                .addAllMonument(result)
-                .build();
-        logger.info("Sending response to client.");
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
-        logger.info("Response sent to client.");
     }
 
 
