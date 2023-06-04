@@ -22,6 +22,8 @@ public class ChannelManager {
     private static LandmarkDetectionServiceGrpc.LandmarkDetectionServiceBlockingStub blockingStub;
 
 
+
+
     /**
      * Tries to get a channel to a server.
      * This channel is guaranteed to be ready.
@@ -45,23 +47,39 @@ public class ChannelManager {
     }
 
     /**
+     * Tries to connect to the ip received as parameter.
+     * @return A channel to the server, or null if the server is not available.
+     */
+    public ManagedChannel getDirectChannel(String server){
+        ManagedChannel channel = null;
+        try{
+            logger.info("Trying to connect to server " + server + "...");
+            channel = ManagedChannelBuilder.forAddress(server, svcPort).usePlaintext().build();
+
+            blockingStub = LandmarkDetectionServiceGrpc.newBlockingStub(channel);
+
+            blockingStub.isAlive(Void.newBuilder().build());
+            logger.info("Connection ready...");
+            return channel;
+        } catch (Exception e){
+            logger.info("Server " + server + " is not available.");
+            if(channel != null){
+                channel.shutdown();
+            }
+        }
+        return null;
+    }
+
+    /**
      * Tries to get a channel to a server.
      * If a server is reachable, it will block until the connection is ready.
      * @return A channel to a server, or null if no server is available.
      */
     private ManagedChannel tryToGetChannel(){
         for(String server : possibleServers){
-            try{
-                logger.info("Trying to connect to server " + server + "...");
-                ManagedChannel channel = ManagedChannelBuilder.forAddress(server, svcPort).usePlaintext().build();
-
-                blockingStub = LandmarkDetectionServiceGrpc.newBlockingStub(channel);
-
-                blockingStub.isAlive(Void.newBuilder().build());
-                logger.info("Connection ready...");
+            ManagedChannel channel = getDirectChannel(server);
+            if(channel != null){
                 return channel;
-            } catch (Exception e){
-                logger.info("Server " + server + " is not available.");
             }
         }
         return null;

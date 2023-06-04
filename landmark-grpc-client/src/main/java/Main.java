@@ -1,9 +1,7 @@
 import com.google.protobuf.ByteString;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import landmark_service.*;
-import landmark_service.Void;
 import observers.LandmarkListResponseStreamObserver;
 import observers.ImageSubmitResponseStreamObserver;
 import observers.LandmarkImageResponseObserver;
@@ -44,27 +42,35 @@ class App {
     private final HashMap<Option,ClientWorker> __AppMethods;
     private final ChannelManager channelManager;
     private ManagedChannel channel;
+    private final String svcIP;
 
-    private App(int svcPort) {
+    private App(int svcPort, String svcIP) {
         __AppMethods = new HashMap<Option, ClientWorker>();
         __AppMethods.put(Option.SubmitImage, new ClientWorker() {public void doWork() {App.this.SubmitImage();}});
         __AppMethods.put(Option.GetSubmissionResult, new ClientWorker() {public void doWork() {App.this.GetSubmissionResult();}});
         __AppMethods.put(Option.GetLandmarkListByConfidenceThresholdResult, new ClientWorker() {public void doWork() {App.this.GetLandmarkListByConfidenceThresholdResult();}});
         channelManager = new ChannelManager(IPLookupURL, svcPort);
+        this.svcIP = svcIP;
     }
 
-    private void StartUp() throws Exception {
+    private void StartUp() {
         System.out.println("Starting up...");
-        channel = channelManager.getChannel();
+        if(svcIP == null){
+            logger.info("Looking up possible servers...");
+            channel = channelManager.getChannel();
+        }else {
+            logger.info("A server ip was received as argument, trying to connect to:" + svcIP + "...");
+            channel = channelManager.getDirectChannel(svcIP);
+        }
         asyncStub = LandmarkDetectionServiceGrpc.newStub(channel);
         System.out.println("Starting up complete.");
         System.out.println();
     }
 
-    public static App getInstance(int svcPort) {
+    public static App getInstance(int svcPort, String svcIP) {
         logger.setLevel(Level.INFO); //TODO: change here the log level
         if(__instance == null) {
-            __instance = new App(svcPort);
+            __instance = new App(svcPort,svcIP);
         }
         return __instance;
     }
@@ -292,22 +298,31 @@ class App {
 
 
 public class Main {
-    public static void main(String[] args) throws SQLException,Exception {
+    public static void main(String[] args) throws Exception {
         //get the port from args
+        System.out.println("App optional Args: <ip> <port>");
         int svcPort = 0;
+        String svcIP = null;
         if(args.length > 0) {
-            svcPort = Integer.parseInt(args[0]);
-            if(svcPort < 0 || svcPort > 65535) {
-                System.out.println("Invalid port number.");
-                return;
+            svcIP = args[0];
+
+            if(args.length > 1) {
+                svcPort = Integer.parseInt(args[1]);
+                if (svcPort < 0 || svcPort > 65535) {
+                    System.out.println("Invalid port number.");
+                    return;
+                }
             }
+
         }
-        else {
+        if(svcPort == 0) {
             System.out.println("Using default port: 7500");
             svcPort = 7500;
+        }else{
+            System.out.println("Using port: " + svcPort);
         }
 
-        App.getInstance(svcPort).Run();
+        App.getInstance(svcPort,svcIP).Run();
     }
 }
 
